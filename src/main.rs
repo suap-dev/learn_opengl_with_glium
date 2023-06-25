@@ -23,7 +23,7 @@ fn main() {
 
     // first triangle
     // kinda equilateral
-    let default_vert_pos: [f32; 2] = [0.0, 0.5];
+    let default_vert_pos: [f32; 2] = [0.0, 0.8];
     let v1 = Vertex {
         position: rotated(default_vert_pos, 0.0 * TAU / 3.0),
     };
@@ -50,29 +50,26 @@ fn main() {
         #version 140
 
         in vec2 position;
-        // uniform float rotation;
+        out vec4 new_color;
+
         uniform mat4 transform; 
 
         void main() {
-            // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
-            // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
-
-            // float x = position.x * cos(rotation) - position.y * sin(rotation);
-            // float y = position.x * sin(rotation) + position.y * cos(rotation);
-
             gl_Position = transform * vec4(position, 0.0, 1.0);
+            new_color = gl_Position;
         }
     "#;
 
     // Fragment Shader
-
     let fragment_shader_src = r#"
         #version 140
 
+        in vec4 new_color;
         out vec4 color;
 
         void main() {
-            color = vec4(0.0, 0.4, 0.7, 1.0);
+            // color = vec4(0.0, 0.4, 0.7, 1.0);
+            color = new_color;
         }
     "#;
 
@@ -115,7 +112,9 @@ fn main() {
         if triangle_rotation > TAU {
             triangle_rotation -= TAU;
         }
-
+        
+        // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
+        // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
         let transform: [[f32; 4]; 4] = [
             [triangle_rotation.cos(), triangle_rotation.sin(), 0.0, 0.0],
             [-triangle_rotation.sin(), triangle_rotation.cos(), 0.0, 0.0],
@@ -123,9 +122,9 @@ fn main() {
             [0.0, 0.0, 0.0, 1.0],
         ];
 
-        // clear screen with a nice orange color
+        // clear screen with a nice blue color
         let mut target = display.draw();
-        target.clear_color(1.0, 59.0 / 255.0, 0.0, 0.0);
+        target.clear_color(0.0, 0.4, 0.7, 1.0);
 
         // draw prepared triangle with prepared program
         target
