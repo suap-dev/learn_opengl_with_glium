@@ -18,17 +18,19 @@ fn main() {
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
 
     // first triangle
-    let default_position: [f32; 2] = rotated(&[0.0, 0.5], TAU / 7.0);
+    // kinda equilateral
+    const DEFAULT_VERT_POS: [f32; 2] = [0.0, 0.5];
     let v1 = Vertex {
-        position: rotated(&default_position, 0.0 * TAU / 3.0),
+        position: rotated(&DEFAULT_VERT_POS, 0.0 * TAU / 3.0),
     };
     let v2 = Vertex {
-        position: rotated(&default_position, 1.0 * TAU / 3.0),
+        position: rotated(&DEFAULT_VERT_POS, 1.0 * TAU / 3.0),
     };
     let v3 = Vertex {
-        position: rotated(&default_position, 2.0 * TAU / 3.0),
+        position: rotated(&DEFAULT_VERT_POS, 2.0 * TAU / 3.0),
     };
-    let triangle = vec![v1, v2, v3];    
+    let triangle = vec![v1, v2, v3];
+    let mut rotation: f32 = 0.0;
 
     // vertex buffer (with our triangle)
     let vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
@@ -44,9 +46,13 @@ fn main() {
         #version 140
 
         in vec2 position;
+        uniform float rotation;
 
         void main() {
-            gl_Position = vec4(position, 0.0, 1.0);
+            float x = position.x * cos(rotation) - position.y * sin(rotation);
+            float y = position.x * sin(rotation) + position.y * cos(rotation);
+
+            gl_Position = vec4(x, y, 0.0, 1.0);
         }
     "#;
 
@@ -90,6 +96,11 @@ fn main() {
         let next_frame_time =
             std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+
+        rotation += TAU/360.0;
+        if rotation > TAU {
+            rotation -= TAU;
+        } 
         
         // clear screen with a nice orange color
         let mut target = display.draw();
@@ -101,7 +112,7 @@ fn main() {
                 &vertex_buffer,
                 indices,
                 &program,
-                &glium::uniforms::EmptyUniforms,
+                &uniform! {rotation: rotation},
                 &Default::default(),
             )
             .unwrap();
@@ -117,10 +128,4 @@ fn rotated(vec2: &[f32; 2], angle: f32) -> [f32; 2] {
     let new_y = x * angle.sin() + y * angle.cos();
 
     [new_x, new_y]
-}
-
-fn rotate_shape(triangle: &mut Vec<Vertex>, angle: f32) {
-    for v in triangle {
-        v.position = rotated(&v.position, angle);
-    }
 }
