@@ -70,10 +70,6 @@ fn main() {
 
     // event loop (game loop?)
     event_loop.run(move |event, _, control_flow| {
-        let next_frame_time =
-            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
-        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-
         #[allow(clippy::collapsible_match)]
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -90,7 +86,11 @@ fn main() {
             },
             _ => return,
         }        
-
+        
+        let next_frame_time =
+            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        
         // clear screen with a nice orange color
         let mut target = display.draw();
         target.clear_color(1.0, 59.0 / 255.0, 0.0, 0.0);
