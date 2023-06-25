@@ -1,3 +1,7 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
+use glium::DrawParameters;
+
 #[macro_use]
 extern crate glium;
 
@@ -19,18 +23,18 @@ fn main() {
 
     // first triangle
     // kinda equilateral
-    const DEFAULT_VERT_POS: [f32; 2] = [0.0, 0.5];
+    let default_vert_pos: [f32; 2] = [0.0, 0.5];
     let v1 = Vertex {
-        position: rotated(&DEFAULT_VERT_POS, 0.0 * TAU / 3.0),
+        position: rotated(default_vert_pos, 0.0 * TAU / 3.0),
     };
     let v2 = Vertex {
-        position: rotated(&DEFAULT_VERT_POS, 1.0 * TAU / 3.0),
+        position: rotated(default_vert_pos, 1.0 * TAU / 3.0),
     };
     let v3 = Vertex {
-        position: rotated(&DEFAULT_VERT_POS, 2.0 * TAU / 3.0),
+        position: rotated(default_vert_pos, 2.0 * TAU / 3.0),
     };
     let triangle = vec![v1, v2, v3];
-    let mut rotation: f32 = 0.0;
+    let mut triangle_rotation: f32 = 0.0;
 
     // vertex buffer (with our triangle)
     let vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
@@ -49,6 +53,9 @@ fn main() {
         uniform float rotation;
 
         void main() {
+            // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
+            // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
+
             float x = position.x * cos(rotation) - position.y * sin(rotation);
             float y = position.x * sin(rotation) + position.y * cos(rotation);
 
@@ -76,7 +83,7 @@ fn main() {
 
     // event loop (game loop?)
     event_loop.run(move |event, _, control_flow| {
-        #[allow(clippy::collapsible_match)]
+        #[allow(clippy::collapsible_match, clippy::match_same_arms)]
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 glutin::event::WindowEvent::CloseRequested => {
@@ -91,17 +98,23 @@ fn main() {
                 _ => return,
             },
             _ => return,
-        }        
-        
-        let next_frame_time =
-            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
-        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        }
 
-        rotation += TAU/360.0;
-        if rotation > TAU {
-            rotation -= TAU;
-        } 
-        
+        let nanos_between_frames: u64 = 16_666_667;
+        let frame_time = std::time::Duration::from_nanos(nanos_between_frames);
+
+        let next_frame_time = std::time::Instant::now() + frame_time;
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        // *control_flow = glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_nanos(16));
+
+        let rotation_per_sec: f32 = TAU / 6.0;
+        let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
+
+        triangle_rotation += rotation_per_frame;
+        if triangle_rotation > TAU {
+            triangle_rotation -= TAU;
+        }
+
         // clear screen with a nice orange color
         let mut target = display.draw();
         target.clear_color(1.0, 59.0 / 255.0, 0.0, 0.0);
@@ -112,20 +125,22 @@ fn main() {
                 &vertex_buffer,
                 indices,
                 &program,
-                &uniform! {rotation: rotation},
-                &Default::default(),
+                &uniform! {rotation: triangle_rotation},
+                &DrawParameters::default(),
             )
             .unwrap();
         target.finish().unwrap();
     });
 }
 
-fn rotated(vec2: &[f32; 2], angle: f32) -> [f32; 2] {
+fn rotated(vec2: [f32; 2], angle: f32) -> [f32; 2] {
     let x = vec2[0];
     let y = vec2[1];
 
-    let new_x = x * angle.cos() - y * angle.sin();
-    let new_y = x * angle.sin() + y * angle.cos();
+    // let new_x = x * angle.cos() - y * angle.sin();
+    let new_x = x.mul_add(angle.cos(), y * angle.sin());
+    // let new_y = x * angle.sin() + y * angle.cos();
+    let new_y = x.mul_add(angle.sin(), y * angle.cos());
 
     [new_x, new_y]
 }
