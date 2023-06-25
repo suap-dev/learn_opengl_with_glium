@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate glium;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
 }
@@ -28,10 +28,10 @@ fn main() {
     let v3 = Vertex {
         position: rotated(&default_position, 2.0 * TAU / 3.0),
     };
-    let mut triangle = vec![v1, v2, v3];
+    let triangle = vec![v1, v2, v3];    
 
     // vertex buffer (with our triangle)
-    let mut vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
 
     // dummy marker - no idea...
     // as I understood it's very important if you have more triangles. ?
@@ -41,7 +41,7 @@ fn main() {
     // Vertex Shader
     // in vec2 position; - declare that we are expected to be passed an attribute named position
     let vertex_shader_src = r#"
-        ##version 140
+        #version 140
 
         in vec2 position;
 
@@ -53,9 +53,9 @@ fn main() {
     // Fragment Shader
 
     let fragment_shader_src = r#"
-        ##version 140
+        #version 140
 
-        varying out vec4 color;
+        out vec4 color;
 
         void main() {
             color = vec4(0.0, 0.4, 0.7, 1.0);
@@ -74,37 +74,27 @@ fn main() {
             std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
-        if let glutin::event::Event::WindowEvent { event, .. } = event {
-            if event == glutin::event::WindowEvent::CloseRequested {
-                *control_flow = glutin::event_loop::ControlFlow::Exit;
-                return;
-            }
-        } else {
-            return;
-        }
+        #[allow(clippy::collapsible_match)]
+        match event {
+            glutin::event::Event::WindowEvent { event, .. } => match event {
+                glutin::event::WindowEvent::CloseRequested => {
+                    *control_flow = glutin::event_loop::ControlFlow::Exit;
+                    return;
+                }
+                _ => return,
+            },
+            glutin::event::Event::NewEvents(cause) => match cause {
+                glutin::event::StartCause::ResumeTimeReached { .. } => (),
+                glutin::event::StartCause::Init => (),
+                _ => return,
+            },
+            _ => return,
+        }        
 
-        // match event {
-        //     glutin::event::Event::WindowEvent { event, .. } => match event {
-        //         glutin::event::WindowEvent::CloseRequested => {
-        //             *control_flow = glutin::event_loop::ControlFlow::Exit;
-        //             return;
-        //         }
-        //         _ => return,
-        //     },
-        //     glutin::event::Event::NewEvents(cause) => match cause {
-        //         glutin::event::StartCause::ResumeTimeReached { .. } => (),
-        //         glutin::event::StartCause::Init => (),
-        //         _ => return,
-        //     },
-        //     _ => return,
-        // }
-
-        rotate_shape(&mut triangle, TAU / 1000.0);
-        vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
-        // println!("{:?}", triangle);
-
+        // clear screen with a nice orange color
         let mut target = display.draw();
         target.clear_color(1.0, 59.0 / 255.0, 0.0, 0.0);
+
         // draw prepared triangle with prepared program
         target
             .draw(
