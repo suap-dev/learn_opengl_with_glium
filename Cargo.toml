@@ -1,5 +1,5 @@
 [package]
-name = "gluim-tutorials"
+name = "learn_opengl_with_glium"
 version = "0.1.0"
 edition = "2021"
 
