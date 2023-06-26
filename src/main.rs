@@ -18,7 +18,7 @@ fn main() {
         .with_inner_size(glutin::dpi::LogicalSize::new(600, 600))
         .with_always_on_top(true)
         .with_decorations(false)
-        .with_position(glutin::dpi::LogicalPosition::new(65.0, 450.0));
+        .with_position(glutin::dpi::LogicalPosition::new(60.0, 400.0));
     let context_builder = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
 
