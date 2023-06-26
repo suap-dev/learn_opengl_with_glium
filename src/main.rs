@@ -1,7 +1,8 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-mod shapes;
+// mod shapes;
 mod shaders;
+mod utah_teapot;
 
 #[macro_use]
 extern crate glium;
@@ -12,31 +13,33 @@ use std::{f32::consts::TAU, io::Cursor};
 fn main() {
     // init Display
     let event_loop = glutin::event_loop::EventLoop::new();
-    let window_builder = glutin::window::WindowBuilder::new();
+    let window_builder = glutin::window::WindowBuilder::new()
+        .with_resizable(false)
+        .with_inner_size(glium::glutin::dpi::LogicalSize::new(600, 600));
     let context_builder = glutin::ContextBuilder::new();
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
-    
-    let triangle = shapes::equilateral_triangle(0.8);
-    let mut triangle_rotation: f32 = 0.0;
-    
+
     // load texture png
-    let image = image::load(
-        Cursor::new(&include_bytes!("../assets/texture.png")),
-        image::ImageFormat::Png,
+    // let image = image::load(
+    //     Cursor::new(&include_bytes!("../assets/texture.png")),
+    //     image::ImageFormat::Png,
+    // )
+    // .unwrap()
+    // .to_rgba8();
+    // let image_dimensions = image.dimensions();
+    // let image =
+    //     glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+    // let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
+
+    let teapot_positions = glium::VertexBuffer::new(&display, &utah_teapot::VERTICES).unwrap();
+    let teapot_normals = glium::VertexBuffer::new(&display, &utah_teapot::VERTICES).unwrap();
+    let teapot_indices = glium::IndexBuffer::new(
+        &display,
+        glium::index::PrimitiveType::TrianglesList,
+        &utah_teapot::INDICES,
     )
-    .unwrap()
-    .to_rgba8();
-    let image_dimensions = image.dimensions();
-    let image =
-        glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
-
-    // vertex buffer (with our triangle)
-    let vertex_buffer = glium::VertexBuffer::new(&display, &triangle).unwrap();
-
-    // dummy marker - no idea...
-    // as I understood it's very important if you have more triangles. ?
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+    .unwrap();
+    let mut rotation: f32 = 0.0;
 
     // SHADERS
     let vertex_shader_src = shaders::VERTEX_SHADER;
@@ -74,20 +77,28 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
         // *control_flow = glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_nanos(16));
 
-        let rotation_per_sec: f32 = TAU / 6.0;
+        let rotation_per_sec: f32 = TAU / 10.0;
         let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
 
-        triangle_rotation += rotation_per_frame;
-        if triangle_rotation > TAU {
-            triangle_rotation -= TAU;
-        }
+        // resize, because teapot big.
+        let resize: [[f32; 4]; 4] = [
+            [0.008, 0.0, 0.0, 0.0],
+            [0.0, 0.008, 0.0, 0.0],
+            [0.0, 0.0, 0.008, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ];
 
+        // rotate, because fun.
+        rotation += rotation_per_frame;
+        if rotation > TAU {
+            rotation -= TAU;
+        }
         // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
         // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
-        let transform: [[f32; 4]; 4] = [
-            [triangle_rotation.cos(), triangle_rotation.sin(), 0.0, 0.0],
-            [-triangle_rotation.sin(), triangle_rotation.cos(), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
+        let rotation: [[f32; 4]; 4] = [
+            [rotation.cos(), 0.0, rotation.sin(), 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [-rotation.sin(), 0.0, rotation.cos(), 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ];
 
@@ -98,10 +109,10 @@ fn main() {
         // draw prepared triangle with prepared program
         target
             .draw(
-                &vertex_buffer,
-                indices,
+                (&teapot_positions, &teapot_normals),
+                &teapot_indices,
                 &program,
-                &uniform! {transform: transform, tex: &texture},
+                &uniform! {transform: resize, rotation: rotation},
                 &DrawParameters::default(),
             )
             .unwrap();
