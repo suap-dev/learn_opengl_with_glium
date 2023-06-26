@@ -2,13 +2,13 @@
 
 // mod shapes;
 mod shaders;
-mod utah_teapot;
+mod teapot;
 
 #[macro_use]
 extern crate glium;
 
 use glium::{glutin, DrawParameters, Surface};
-use std::{f32::consts::TAU, io::Cursor};
+use std::f32::consts::TAU;
 
 fn main() {
     // init Display
@@ -19,24 +19,12 @@ fn main() {
     let context_builder = glutin::ContextBuilder::new();
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
 
-    // load texture png
-    // let image = image::load(
-    //     Cursor::new(&include_bytes!("../assets/texture.png")),
-    //     image::ImageFormat::Png,
-    // )
-    // .unwrap()
-    // .to_rgba8();
-    // let image_dimensions = image.dimensions();
-    // let image =
-    //     glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    // let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
-
-    let teapot_positions = glium::VertexBuffer::new(&display, &utah_teapot::VERTICES).unwrap();
-    let teapot_normals = glium::VertexBuffer::new(&display, &utah_teapot::VERTICES).unwrap();
+    let teapot_positions = glium::VertexBuffer::new(&display, &teapot::VERTICES).unwrap();
+    let teapot_normals = glium::VertexBuffer::new(&display, &teapot::NORMALS).unwrap();
     let teapot_indices = glium::IndexBuffer::new(
         &display,
         glium::index::PrimitiveType::TrianglesList,
-        &utah_teapot::INDICES,
+        &teapot::INDICES,
     )
     .unwrap();
     let mut rotation: f32 = 0.0;
@@ -46,7 +34,6 @@ fn main() {
     let fragment_shader_src = shaders::FRAGMENT_SHADER;
 
     // program
-    // send shaders to glium
     let program =
         glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None)
             .unwrap();
@@ -75,7 +62,6 @@ fn main() {
 
         let next_frame_time = std::time::Instant::now() + frame_time;
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-        // *control_flow = glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_nanos(16));
 
         let rotation_per_sec: f32 = TAU / 10.0;
         let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
@@ -102,6 +88,8 @@ fn main() {
             [0.0, 0.0, 0.0, 1.0],
         ];
 
+        let light: [f32; 3] = [-0.1, 0.4, 0.9];
+
         // clear screen with a nice blue color
         let mut target = display.draw();
         target.clear_color(0.0, 0.4, 0.7, 1.0);
@@ -112,7 +100,7 @@ fn main() {
                 (&teapot_positions, &teapot_normals),
                 &teapot_indices,
                 &program,
-                &uniform! {transform: resize, rotation: rotation},
+                &uniform! {resize: resize, rotation: rotation, u_light: light},
                 &DrawParameters::default(),
             )
             .unwrap();

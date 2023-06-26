@@ -1,36 +1,29 @@
 pub const VERTEX_SHADER: &str = r#"
-#version 140
+#version 150
 
 in vec3 position;
 in vec3 normal;
-// in vec2 tex_coords;
-
-// out vec4 new_color;
-// out vec2 v_tex_coords;
-
-uniform mat4 transform;
+out vec3 v_normal;
+uniform mat4 resize;
 uniform mat4 rotation;
 
 void main() {
-    gl_Position =  transform * rotation * vec4(position, 1.0);
-    // new_color = gl_Position;
-    // v_tex_coords = tex_coords;
+    v_normal = transpose(inverse(mat3(resize))) * normal;
+    gl_Position =   resize * rotation * vec4(position, 1.0);
 }
 "#;
 
 pub const FRAGMENT_SHADER: &str = r#"
 #version 140
 
-// in vec4 new_color;
-// in vec2 v_tex_coords;
-
+in vec3 v_normal;
 out vec4 color;
-
-// uniform sampler2D tex;
+uniform vec3 u_light;
 
 void main() {
-    color = vec4(0.0, 0.4, 0.7, 1.0);
-    // color = new_color;
-    // color = texture(tex, v_tex_coords);
+    float brightness = dot(normalize(v_normal), normalize(u_light));
+    vec3 reg_color = vec3(0.91, 0.608, 0.757);
+    vec3 dark_color = vec3(0.612, 0.212, 0.408);
+    color = vec4(mix(dark_color, reg_color, brightness), 1.0);
 }
 "#;
