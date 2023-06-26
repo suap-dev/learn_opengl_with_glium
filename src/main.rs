@@ -7,7 +7,7 @@ mod teapot;
 #[macro_use]
 extern crate glium;
 
-use glium::{glutin, DrawParameters, Surface};
+use glium::{glutin, Surface};
 use std::f32::consts::TAU;
 
 fn main() {
@@ -16,7 +16,7 @@ fn main() {
     let window_builder = glutin::window::WindowBuilder::new()
         .with_resizable(false)
         .with_inner_size(glium::glutin::dpi::LogicalSize::new(600, 600));
-    let context_builder = glutin::ContextBuilder::new();
+    let context_builder = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
 
     let teapot_positions = glium::VertexBuffer::new(&display, &teapot::VERTICES).unwrap();
@@ -66,11 +66,12 @@ fn main() {
         let rotation_per_sec: f32 = TAU / 10.0;
         let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
 
+        let scale: f32 = 0.008;
         // resize, because teapot big.
-        let resize: [[f32; 4]; 4] = [
-            [0.008, 0.0, 0.0, 0.0],
-            [0.0, 0.008, 0.0, 0.0],
-            [0.0, 0.0, 0.008, 0.0],
+        let scale: [[f32; 4]; 4] = [
+            [scale, 0.0, 0.0, 0.0],
+            [0.0, scale, 0.0, 0.0],
+            [0.0, 0.0, scale, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ];
 
@@ -88,11 +89,11 @@ fn main() {
             [0.0, 0.0, 0.0, 1.0],
         ];
 
-        let light: [f32; 3] = [-0.1, 0.4, 0.9];
+        let light: [f32; 3] = [-0.9, 1.0, -0.2];
 
         // clear screen with a nice blue color
         let mut target = display.draw();
-        target.clear_color(0.0, 0.4, 0.7, 1.0);
+        target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
 
         // draw prepared triangle with prepared program
         target
@@ -100,8 +101,15 @@ fn main() {
                 (&teapot_positions, &teapot_normals),
                 &teapot_indices,
                 &program,
-                &uniform! {resize: resize, rotation: rotation, u_light: light},
-                &DrawParameters::default(),
+                &uniform! {u_scale: scale, u_rotation: rotation, u_light: light},
+                &glium::DrawParameters {
+                    depth: glium::Depth {
+                        test: glium::draw_parameters::DepthTest::IfLess,
+                        write: true,
+                        ..glium::Depth::default()
+                    },
+                    ..glium::DrawParameters::default()
+                },
             )
             .unwrap();
         target.finish().unwrap();
