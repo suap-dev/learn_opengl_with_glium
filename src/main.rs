@@ -10,15 +10,16 @@ extern crate glium;
 use glium::{glutin, Surface};
 use std::f32::consts::TAU;
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     // init Display
     let event_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new()
-        .with_resizable(false)
+        // .with_resizable(false)
         .with_inner_size(glutin::dpi::LogicalSize::new(600, 600))
         .with_always_on_top(true)
-        .with_decorations(false)
-        .with_position(glutin::dpi::LogicalPosition::new(60.0, 400.0));
+        // .with_decorations(false)
+        .with_position(glutin::dpi::LogicalPosition::new(53.0, 420.0));
     let context_builder = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
 
@@ -33,8 +34,8 @@ fn main() {
     let mut rotation: f32 = 0.0;
 
     // SHADERS
-    let vertex_shader_src = shaders::VERTEX_SHADER;
-    let fragment_shader_src = shaders::FRAGMENT_SHADER;
+    let vertex_shader_src: &str = shaders::VERTEX_SHADER;
+    let fragment_shader_src: &str = shaders::FRAGMENT_SHADER;
 
     // program
     let program =
@@ -67,35 +68,78 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         let rotation_per_sec: f32 = TAU / 10.0;
-        let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
+        let rotation_per_frame: f32 = rotation_per_sec * frame_time.as_secs_f32();
 
-        let scale: f32 = 0.008;
         // resize, because teapot big.
-        let scale: [[f32; 4]; 4] = [
-            [scale, 0.0, 0.0, 0.0],
-            [0.0, scale, 0.0, 0.0],
-            [0.0, 0.0, scale, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ];
+        let scale: [[f32; 4]; 4] = {
+            let scale: f32 = 0.008;
+
+            [
+                [scale, 0.0, 0.0, 0.0],
+                [0.0, scale, 0.0, 0.0],
+                [0.0, 0.0, scale, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        };
+
+        let translation: [[f32; 4];4] = {
+            let x: f32 = 0.0;
+            let y: f32 = -1.0;
+            let z: f32 = 4.0;
+
+            [
+                [1.0,   0.0,    0.0,    0.0],
+                [0.0,   1.0,    0.0,    0.0],
+                [0.0,   0.0,    1.0,    0.0],
+                [x,     y,      z,      1.0]
+            ]
+        };
 
         // rotate, because fun.
-        rotation += rotation_per_frame;
-        if rotation > TAU {
-            rotation -= TAU;
-        }
+
         // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
         // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
-        let rotation: [[f32; 4]; 4] = [
-            [rotation.cos(), 0.0, rotation.sin(), 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [-rotation.sin(), 0.0, rotation.cos(), 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ];
+        let rotation: [[f32; 4]; 4] = {
+            rotation += rotation_per_frame;
+            if rotation > TAU {
+                rotation -= TAU;
+            }
+
+            [
+                [rotation.cos(),    0.0,    rotation.sin(),    0.0],
+                [0.0,               1.0,    0.0,               0.0],
+                [-rotation.sin(),   0.0,    rotation.cos(),    0.0],
+                [0.0,               0.0,    0.0,               1.0],
+            ]
+        };
+
+        // clear screen with a nice blue color
+        let mut target = display.draw();
+
+        let perspective: [[f32; 4]; 4] = {
+            let (width, height) = target.get_dimensions();
+
+            #[allow(clippy::cast_precision_loss)]
+            let aspect_ratio: f32 = height as f32 / width as f32;
+
+            let fov: f32 = TAU / 6.0;
+            let z_far: f32 = 1024.0;
+            let z_near: f32 = 0.1;
+
+            let f = 1.0 / (fov / 2.0).tan();
+
+            [
+                [f * aspect_ratio,  0.0,    0.0,                                        0.0],
+                [0.0,               f,      0.0,                                        0.0],
+                [0.0,               0.0,    (z_far + z_near) / (z_far - z_near),        1.0],
+                [0.0,               0.0,    -(2.0 * z_far * z_near) / (z_far - z_near), 0.0],
+            ]
+        };
 
         let light: [f32; 3] = [-0.9, 1.0, -0.2];
 
         // clear screen with a nice blue color
-        let mut target = display.draw();
+        // let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
 
         // draw prepared triangle with prepared program
@@ -104,7 +148,7 @@ fn main() {
                 (&teapot_positions, &teapot_normals),
                 &teapot_indices,
                 &program,
-                &uniform! {u_scale: scale, u_rotation: rotation, u_light: light},
+                &uniform! {u_scale: scale, u_rotation: rotation, u_light: light, u_perspective: perspective, u_translation: translation},
                 &glium::DrawParameters {
                     depth: glium::Depth {
                         test: glium::draw_parameters::DepthTest::IfLess,
@@ -116,5 +160,5 @@ fn main() {
             )
             .unwrap();
         target.finish().unwrap();
-    });
+    }); // event_loop::run(..)
 }
