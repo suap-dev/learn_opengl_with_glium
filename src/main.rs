@@ -1,45 +1,24 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use glium::DrawParameters;
+mod shapes;
+mod shaders;
 
 #[macro_use]
 extern crate glium;
 
-#[derive(Copy, Clone)]
-struct Vertex {
-    position: [f32; 2],
-    tex_coords: [f32; 2],
-}
-implement_vertex!(Vertex, position, tex_coords);
+use glium::{glutin, DrawParameters, Surface};
+use std::{f32::consts::TAU, io::Cursor};
 
-#[allow(clippy::too_many_lines)]
 fn main() {
-    use glium::{glutin, Surface};
-    use std::{f32::consts::TAU, io::Cursor};
-
     // init Display
     let event_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new();
     let context_builder = glutin::ContextBuilder::new();
     let display = glium::Display::new(window_builder, context_builder, &event_loop).unwrap();
-
-    // first triangle
-    // kinda equilateral
-    let default_vert_pos: [f32; 2] = [0.0, 0.8];
-    let v1 = Vertex {
-        position: rotated(default_vert_pos, 0.0 * TAU / 3.0),
-        tex_coords: [0.0, 0.0],
-    };
-    let v2 = Vertex {
-        position: rotated(default_vert_pos, 1.0 * TAU / 3.0),
-        tex_coords: [0.0, 2.0],
-    };
-    let v3 = Vertex {
-        position: rotated(default_vert_pos, 2.0 * TAU / 3.0),
-        tex_coords: [2.0, 0.0],
-    };
-    let triangle = vec![v1, v2, v3];
+    
+    let triangle = shapes::equilateral_triangle(0.8);
     let mut triangle_rotation: f32 = 0.0;
+    
     // load texture png
     let image = image::load(
         Cursor::new(&include_bytes!("../assets/texture.png")),
@@ -60,43 +39,8 @@ fn main() {
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
 
     // SHADERS
-    // Vertex Shader
-    // in vec2 position; - declare that we are expected to be passed an attribute named position
-    let vertex_shader_src = r#"
-        #version 140
-
-        in vec2 position;
-        in vec2 tex_coords;
-
-        out vec4 new_color;
-        out vec2 v_tex_coords;
-
-        uniform mat4 transform; 
-
-        void main() {
-            gl_Position = transform * vec4(position, 0.0, 1.0);
-            new_color = gl_Position;
-            v_tex_coords = tex_coords;
-        }
-    "#;
-
-    // Fragment Shader
-    let fragment_shader_src = r#"
-        #version 140
-
-        in vec4 new_color;
-        in vec2 v_tex_coords;
-
-        out vec4 color;
-
-        uniform sampler2D tex;
-
-        void main() {
-            // color = vec4(0.0, 0.4, 0.7, 1.0);
-            // color = new_color;
-            color = texture(tex, v_tex_coords);
-        }
-    "#;
+    let vertex_shader_src = shaders::VERTEX_SHADER;
+    let fragment_shader_src = shaders::FRAGMENT_SHADER;
 
     // program
     // send shaders to glium
@@ -163,16 +107,4 @@ fn main() {
             .unwrap();
         target.finish().unwrap();
     });
-}
-
-fn rotated(vec2: [f32; 2], angle: f32) -> [f32; 2] {
-    let x = vec2[0];
-    let y = vec2[1];
-
-    // let new_x = x * angle.cos() - y * angle.sin();
-    let new_x = x.mul_add(angle.cos(), y * angle.sin());
-    // let new_y = x * angle.sin() + y * angle.cos();
-    let new_y = x.mul_add(angle.sin(), y * angle.cos());
-
-    [new_x, new_y]
 }
