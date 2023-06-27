@@ -9,13 +9,16 @@ uniform mat4 u_scale;
 uniform mat4 u_rotation;
 uniform mat4 u_perspective;
 uniform mat4 u_translation;
+uniform mat4 u_view;
 
 void main() {
+    // mat4 model_view = u_view * model;
+    mat4 model_view = u_view * (u_translation * u_scale * u_rotation);
+    
     // v_normal should be scaled if we non-uniformely scale positions.
-    mat4 transform = u_scale * u_rotation;
-    v_normal = transpose(inverse(mat3(transform))) * normal;
+    v_normal = transpose(inverse(mat3(model_view))) * normal;
 
-    gl_Position = u_perspective * u_translation * transform *  vec4(position, 1.0);
+    gl_Position = u_perspective * model_view *  vec4(position, 1.0);
 }
 "#;
 

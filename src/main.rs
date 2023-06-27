@@ -1,9 +1,9 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 // mod shapes;
+mod matrices;
 mod shaders;
 mod teapot;
-mod matrices;
 
 #[macro_use]
 extern crate glium;
@@ -60,7 +60,7 @@ fn main() {
             },
             _ => return,
         }
-        
+
         // frame time
         let nanos_between_frames: u64 = 16_666_667;
         let frame_time = std::time::Duration::from_nanos(nanos_between_frames);
@@ -74,7 +74,7 @@ fn main() {
         let (width, height) = target.get_dimensions();
         #[allow(clippy::cast_precision_loss)]
         let aspect_ratio = height as f32 / width as f32;
-        
+
         // rotation angle
         let rotation_per_sec = TAU / 10.0;
         let rotation_per_frame = rotation_per_sec * frame_time.as_secs_f32();
@@ -82,16 +82,17 @@ fn main() {
         if rotation > TAU {
             rotation -= TAU;
         }
-        
+
         // light vector (or position?)
         let light: [f32; 3] = [-0.9, 1.0, -0.2];
 
         // transforms
         let rotation_matrix = matrices::rotation(rotation);
         let scale_matrix = matrices::scale(0.008);
-        let translation_matrix = matrices::translation(0.0, -1.0, 4.0);
-        let perspective_matrix = matrices::perspective(aspect_ratio, TAU/6.0, 0.1, 1024.0);
-        // let view_matrix = matrices::view(&[2.0, -1.0, 1.0], &[-2.0, 1.0, 1.0], &[0.0, 1.0, 0.0]);
+        // let translation_matrix = matrices::translation(0.0, -1.0, 4.0);
+        let translation_matrix = matrices::translation(0.0, 0.0, 2.0);
+        let perspective_matrix = matrices::perspective(aspect_ratio, TAU / 6.0, 0.1, 1024.0);
+        let view_matrix = matrices::view(&[2.0, 2.0, 1.0], &[-2.0, -2.0, 1.0], &[0.0, 1.0, 0.0]);
 
         // clear screen with a nice blue color
         target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
@@ -102,7 +103,14 @@ fn main() {
                 (&teapot_positions, &teapot_normals),
                 &teapot_indices,
                 &program,
-                &uniform! {u_scale: scale_matrix, u_rotation: rotation_matrix, u_light: light, u_perspective: perspective_matrix, u_translation: translation_matrix},
+                &uniform! {
+                    u_light: light,
+                    u_perspective: perspective_matrix,
+                    u_rotation: rotation_matrix,
+                    u_scale: scale_matrix,
+                    u_translation: translation_matrix,
+                    u_view: view_matrix,
+                },
                 &glium::DrawParameters {
                     depth: glium::Depth {
                         test: glium::draw_parameters::DepthTest::IfLess,
