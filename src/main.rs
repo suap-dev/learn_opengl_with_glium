@@ -87,13 +87,15 @@ fn main() {
         let light: [f32; 3] = [-0.9, 1.0, -0.2];
 
         // transforms
-        let rotation_matrix = matrices::rotation(rotation);
+        let rotation_matrix = matrices::rotation(matrices::Axis::Z, rotation);
         let scale_matrix = matrices::scale(0.008);
         // let translation_matrix = matrices::translation(0.0, -1.0, 4.0);
-        let translation_matrix = matrices::translation(0.0, 0.0, 2.0);
+        let translation_matrix = matrices::translation(0.0, 0.0, 0.8);
         let perspective_matrix = matrices::perspective(aspect_ratio, TAU / 6.0, 0.1, 1024.0);
-        let view_matrix = matrices::view(&[2.0, 2.0, 1.0], &[-2.0, -2.0, 1.0], &[0.0, 1.0, 0.0]);
-
+        // let view_matrix = matrices::view(&[2.0, 2.0, 1.0], &[-2.0, -2.0, 1.0], &[0.0, 1.0, 0.0]);
+        // let view_matrix = matrices::view(&[0.0, 1.0, -2.0], &[0.0, -0.5, 2.0], &[0.0, 1.0, 0.0]);
+        let view_matrix = matrices::view(&[0.0, 0.0, -2.0], &[0.0, 0.0, 2.0], &[0.0, 1.0, 0.0]);
+        
         // clear screen with a nice blue color
         target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
 

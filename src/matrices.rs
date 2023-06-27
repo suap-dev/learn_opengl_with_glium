@@ -42,13 +42,27 @@ pub fn view(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 
 
 // unless we are doing couple of thousand operations of trigonometry each frame we can really do it on CPU
 // source: https://www.reddit.com/r/AskComputerScience/comments/22g1dg/how_is_trigonometry_computed_with_cpu_does_gpu/
-pub fn rotation(angle: f32) -> [[f32; 4]; 4] {
-    [
-        [angle.cos(), 0.0, angle.sin(), 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [-angle.sin(), 0.0, angle.cos(), 0.0],
-        [0.0, 0.0, 0.0, 1.0],
-    ]
+pub fn rotation(axis: Axis, angle: f32) -> [[f32; 4]; 4] {
+    match axis {
+        Axis::Y => [
+            [angle.cos(), angle.sin(), 0.0, 0.0],
+            [-angle.sin(), angle.cos(), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
+        Axis::X => [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, angle.cos(), angle.sin(), 0.0],
+            [0.0, -angle.sin(), angle.cos(), 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
+        Axis::Z => [
+            [angle.cos(), 0.0, angle.sin(), 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [-angle.sin(), 0.0, angle.cos(), 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
+    }
 }
 
 pub const fn translation(x: f32, y: f32, z: f32) -> [[f32; 4]; 4] {
@@ -77,4 +91,10 @@ pub fn perspective(aspect_ratio: f32, fov_angle: f32, z_near: f32, z_far: f32) -
         [0.0, 0.0, (z_far + z_near) / (z_far - z_near), 1.0],
         [0.0, 0.0, -(2.0 * z_far * z_near) / (z_far - z_near), 0.0],
     ]
+}
+
+pub enum Axis {
+    X,
+    Y,
+    Z,
 }
