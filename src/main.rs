@@ -60,8 +60,10 @@ fn main() {
             },
             _ => return,
         }
-        // frame time
-        let nanos_between_frames: u64 = 16_666_667;
+        // frame time        
+        let fps: u128 = 60;
+        #[allow(clippy::cast_possible_truncation)]
+        let nanos_between_frames: u64 = (std::time::Duration::from_secs(1).as_nanos() / fps) as u64;
         let frame_time = std::time::Duration::from_nanos(nanos_between_frames);
         let next_frame_time = std::time::Instant::now() + frame_time;
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
