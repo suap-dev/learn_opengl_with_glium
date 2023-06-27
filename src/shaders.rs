@@ -5,15 +5,16 @@ in vec3 position;
 in vec3 normal;
 out vec3 v_normal;
 
-uniform mat4 u_scale;
-uniform mat4 u_rotation;
 uniform mat4 u_perspective;
-uniform mat4 u_translation;
-uniform mat4 u_view;
+// uniform mat4 u_view;
+// uniform mat4 u_translation;
+// uniform mat4 u_scale;
+// uniform mat4 u_rotation;
+uniform mat4 model_view;
 
 void main() {
     // mat4 model_view = u_view * model;
-    mat4 model_view = u_view * (u_translation * u_scale * u_rotation);
+    // mat4 model_view = u_view * (u_translation * u_scale * u_rotation);
     
     // v_normal should be scaled if we non-uniformely scale positions.
     v_normal = transpose(inverse(mat3(model_view))) * normal;

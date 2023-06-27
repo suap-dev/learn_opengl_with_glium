@@ -89,13 +89,18 @@ fn main() {
         // transforms
         let rotation_matrix = matrices::rotation(matrices::Axis::Z, rotation);
         let scale_matrix = matrices::scale(0.008);
-        // let translation_matrix = matrices::translation(0.0, -1.0, 4.0);
         let translation_matrix = matrices::translation(0.0, 0.0, 0.8);
         let perspective_matrix = matrices::perspective(aspect_ratio, TAU / 6.0, 0.1, 1024.0);
-        // let view_matrix = matrices::view(&[2.0, 2.0, 1.0], &[-2.0, -2.0, 1.0], &[0.0, 1.0, 0.0]);
-        // let view_matrix = matrices::view(&[0.0, 1.0, -2.0], &[0.0, -0.5, 2.0], &[0.0, 1.0, 0.0]);
         let view_matrix = matrices::view(&[0.0, 0.0, -2.0], &[0.0, 0.0, 2.0], &[0.0, 1.0, 0.0]);
-        
+
+        let model_view_matrix = matrices::mat_mul(
+            &view_matrix,
+            &matrices::mat_mul(
+                &translation_matrix,
+                &matrices::mat_mul(&scale_matrix, &rotation_matrix),
+            ),
+        );
+
         // clear screen with a nice blue color
         target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
 
@@ -108,10 +113,11 @@ fn main() {
                 &uniform! {
                     u_light: light,
                     u_perspective: perspective_matrix,
-                    u_rotation: rotation_matrix,
-                    u_scale: scale_matrix,
-                    u_translation: translation_matrix,
-                    u_view: view_matrix,
+                    // u_rotation: rotation_matrix,
+                    // u_scale: scale_matrix,
+                    // u_translation: translation_matrix,
+                    // u_view: view_matrix,
+                    model_view: model_view_matrix,
                 },
                 &glium::DrawParameters {
                     depth: glium::Depth {

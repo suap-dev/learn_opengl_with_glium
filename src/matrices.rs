@@ -93,6 +93,21 @@ pub fn perspective(aspect_ratio: f32, fov_angle: f32, z_near: f32, z_far: f32) -
     ]
 }
 
+// naive iterating algorithm
+pub fn mat_mul(mat1: &[[f32; 4]; 4], mat2: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
+    let mut result = [[0.0; 4]; 4];
+
+    for i in 0..4 {
+        for j in 0..4 {
+            for k in 0..4 {
+                result[i][j] += mat1[k][j] * mat2[i][k];
+            }
+        }
+    }
+
+    result
+}
+
 pub enum Axis {
     X,
     Y,
