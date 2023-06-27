@@ -94,7 +94,7 @@ pub fn perspective(aspect_ratio: f32, fov_angle: f32, z_near: f32, z_far: f32) -
 }
 
 // naive iterating algorithm
-pub fn mat_mul(mat1: &[[f32; 4]; 4], mat2: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
+pub fn product(mat1: &[[f32; 4]; 4], mat2: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
     let mut result = [[0.0; 4]; 4];
 
     for i in 0..4 {
@@ -106,6 +106,15 @@ pub fn mat_mul(mat1: &[[f32; 4]; 4], mat2: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
     }
 
     result
+}
+
+pub fn left_mul(matrices: &mut Vec<&[[f32;4];4]>) -> [[f32;4];4] {
+    if matrices.len() > 1 {
+        let right = matrices.pop().unwrap();
+        product(&left_mul(matrices), right)
+    } else {
+        *matrices.pop().unwrap()
+    }
 }
 
 pub enum Axis {

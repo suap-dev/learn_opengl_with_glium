@@ -60,7 +60,6 @@ fn main() {
             },
             _ => return,
         }
-
         // frame time
         let nanos_between_frames: u64 = 16_666_667;
         let frame_time = std::time::Duration::from_nanos(nanos_between_frames);
@@ -87,19 +86,19 @@ fn main() {
         let light: [f32; 3] = [-0.9, 1.0, -0.2];
 
         // transforms
-        let rotation_matrix = matrices::rotation(matrices::Axis::Z, rotation);
-        let scale_matrix = matrices::scale(0.008);
-        let translation_matrix = matrices::translation(0.0, 0.0, 0.8);
-        let perspective_matrix = matrices::perspective(aspect_ratio, TAU / 6.0, 0.1, 1024.0);
         let view_matrix = matrices::view(&[0.0, 0.0, -2.0], &[0.0, 0.0, 2.0], &[0.0, 1.0, 0.0]);
+        let translation_matrix = matrices::translation(0.0, 0.0, 0.8);
+        let scale_matrix = matrices::scale(0.008);
+        let rotation_matrix = matrices::rotation(matrices::Axis::Z, rotation);
 
-        let model_view_matrix = matrices::mat_mul(
+        let model_view_matrix = matrices::left_mul(&mut vec![
             &view_matrix,
-            &matrices::mat_mul(
-                &translation_matrix,
-                &matrices::mat_mul(&scale_matrix, &rotation_matrix),
-            ),
-        );
+            &translation_matrix,
+            &scale_matrix,
+            &rotation_matrix,
+        ]);
+
+        let perspective_matrix = matrices::perspective(aspect_ratio, TAU / 6.0, 0.1, 1024.0);
 
         // clear screen with a nice blue color
         target.clear_color_and_depth((0.0, 0.4, 0.7, 1.0), 1.0);
