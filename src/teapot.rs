@@ -1,3 +1,6 @@
+
+#![allow(clippy::unreadable_literal)]
+
 #[derive(Copy, Clone)]
 pub struct Vertex {
     position: (f32, f32, f32)
